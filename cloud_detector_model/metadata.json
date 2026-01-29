@@ -1,0 +1,7 @@
+{
+  "model_size": "m",
+  "device": "cuda",
+  "provider": null,
+  "epochs": 100,
+  "classes": 104
+}
