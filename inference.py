@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import List, Dict
 import json
 import argparse
-from training_pipeline import CloudArchitectureDetector
+from ultralytics import YOLO
+import torch
 
 class CloudArchitectureInference:
     """Realiza inferência com o modelo treinado"""
@@ -19,8 +20,11 @@ class CloudArchitectureInference:
         Args:
             model_path: Caminho para o diretório do modelo salvo
         """
-        self.detector = CloudArchitectureDetector()
-        self.detector.load_model(Path(model_path))
+        # Detectar device
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+        # Carregar modelo
+        self.load_model(Path(model_path))
         
         # Carregar mapeamento de classes
         self.class_map = {}
@@ -50,6 +54,29 @@ class CloudArchitectureInference:
         else:
             print("⚠️  Arquivo classes.txt não encontrado")
     
+    def load_model(self, model_path: Path):
+        """Carrega modelo salvo"""
+        detection_weights = model_path / "detection_model.pt"
+
+        if not detection_weights.exists():
+            raise FileNotFoundError(f"Pesos não encontrados: {detection_weights}")
+
+        self.detection_model = YOLO(str(detection_weights))
+        self.detection_model.to(self.device)
+
+        # Carregar metadata
+        metadata_file = model_path / "metadata.json"
+        if metadata_file.exists():
+            with open(metadata_file) as f:
+                metadata = json.load(f)
+                self.provider = metadata.get("provider")
+                self.model_size = metadata.get("model_size", "m")
+        else:
+            self.provider = None
+            self.model_size = "m"
+
+        print(f"✅ Modelo carregado de: {model_path}")
+    
     def detect(self, image_path: Path, apply_nms: bool = True, confidence: float = 0.5) -> Dict:
         """
         Detecta objetos
@@ -62,7 +89,29 @@ class CloudArchitectureInference:
         Returns:
             Dicionário com resultados
         """
-        result = self.detector.predict(image_path, confidence=confidence)
+        # Realizar predição com YOLO
+        results = self.detection_model.predict(
+            source=str(image_path), 
+            conf=confidence, 
+            device=self.device, 
+            verbose=False
+        )
+        
+        # Processar resultados
+        detections = []
+        if len(results) > 0:
+            result = results[0]
+            boxes = result.boxes
+
+            for i in range(len(boxes)):
+                detection = {
+                    "class_id": int(boxes.cls[i].item()),
+                    "confidence": float(boxes.conf[i].item()),
+                    "bbox": boxes.xyxy[i].tolist(),
+                }
+                detections.append(detection)
+        
+        result = {"image_path": str(image_path), "detections": detections}
         
         # Mapear class_id para nomes
         for detection in result['detections']:

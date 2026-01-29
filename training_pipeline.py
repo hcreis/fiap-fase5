@@ -291,26 +291,6 @@ names: {classes}
 
         print(f"✅ Modelo salvo em: {model_path}")
 
-    def load_model(self, model_path: Path):
-        """Carrega modelo salvo"""
-        detection_weights = model_path / "detection_model.pt"
-
-        if not detection_weights.exists():
-            raise FileNotFoundError(f"Pesos não encontrados: {detection_weights}")
-
-        self.detection_model = YOLO(str(detection_weights))
-        self.detection_model.to(self.device)
-
-        # Carregar metadata
-        metadata_file = model_path / "metadata.json"
-        if metadata_file.exists():
-            with open(metadata_file) as f:
-                metadata = json.load(f)
-                self.provider = metadata.get("provider")
-                self.model_size = metadata.get("model_size", "m")
-
-        print(f"✅ Modelo carregado de: {model_path}")
-
 
 def main():
     """Exemplo de uso"""
