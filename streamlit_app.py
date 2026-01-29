@@ -96,6 +96,12 @@ with st.sidebar:
         format_func=lambda x: x.upper() if x != "all" else "Todos"
     )
     
+    apply_nms = st.checkbox(
+        "Aplicar NMS",
+        value=True,
+        help="Non-Maximum Suppression para remover detecções sobrepostas"
+    )
+    
     st.markdown("---")
     st.markdown("### 🛡️ Segurança (LLM)")
     
@@ -205,6 +211,7 @@ if uploaded_file is not None:
                 # Realizar detecção
                 result = st.session_state.model.detect(
                     tmp_path,
+                    apply_nms=apply_nms,
                     confidence=confidence_threshold
                 )
                 
