@@ -64,7 +64,7 @@ if 'messages' not in st.session_state:
 
 # Inicializar Security Analyzer
 if 'security_analyzer' not in st.session_state:
-    st.session_state.security_analyzer = SecurityAnalyzer()
+    st.session_state.security_analyzer = SecurityAnalyzer(ollama_url="https://d7b33175fb7b.ngrok-free.app")
     st.session_state.ollama_connected = st.session_state.security_analyzer.check_connection()
 
 if 'model' not in st.session_state:
